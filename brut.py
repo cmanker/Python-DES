@@ -179,28 +179,56 @@ def main(argv):
    inputfile = ''
    outputfile = ''
    if not argv:
-     print 'brut.py -i <inputfile> -o <outputfile>'
+     print 'brut.py -k <hex of key> -i <inputfile> -o <outputfile>'
      sys.exit(2)
    try:
-     opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+     opts, args = getopt.getopt(argv,"hk:i:o:",["ifile=","ofile="])
    except getopt.GetoptError:
-     print 'brut.py -i <inputfile> -o <outputfile>'
+     print 'brut.py -k <hex of key> -i <inputfile> -o <outputfile>'
      sys.exit(2)
    for opt, arg in opts:
      if opt == '-h':
-       print 'brut.py -i <inputfile> -o <outputfile>'
+       print 'brut.py -k FFFFB011AACC000 -i enc_msg.txt -o dec_msg_key.txt'
+       print '-k is starting point for incrementing key'
        sys.exit()
      elif opt in ("-i", "--infile"):
        inputfile = arg
      elif opt in ("-o", "--ofile"):
        outfile = arg
-   print inputfile
-   raw_message=read_file(inputfile)
-   print raw_message
+     elif opt in ("-k", "--key"):
+       start_key = arg
+   raw_message=read_file(inputfile).rstrip('\r\n')
+   decode(start_key,raw_message)
 
 def read_file(filename):
    content = open(filename)
    return content.read()
+
+def decode(key,ciphertext):
+   from time import time
+   from binascii import unhexlify as unhex
+
+   # example of DES encrypting in CBC mode with the IV of "\0\0\0\0\0\0\0\0"
+   print (" ##  Starting DES encryption using CBC mode ##")
+   print (" Input     : %r" % ciphertext)
+   print ""
+   t = time()
+   next_string_key = key
+   x = 0
+   while True:
+      #increment hexadecimal string
+      next_string_key='{:X}'.format(long(next_string_key,16)+1).zfill(16)
+      k = des(unhex(next_string_key), CBC, "\0\0\0\0\0\0\0\0")
+      d = ciphertext
+      decrypted = k.decrypt(d)
+      x = x + 1
+      if "ISIS" in decrypted: break
+   print (" Matching Key      : %r" % k.getKey())
+   print (" Decrypted Output     : %r" % decrypted)
+   print (" DES time taken: %f (%d crypt operations)" % ((time() - t),x))
+   print (" ##                       ##")
+   print ""
+   sys.exit(1)
 
 if __name__ == '__main__':
 	#_example_des_()
@@ -208,4 +236,4 @@ if __name__ == '__main__':
 	#_fulltest_()
 	#_filetest_()
 	#_profile_()
-         main(sys.argv[1:])
+        main(sys.argv[1:])
