@@ -198,18 +198,32 @@ def main(argv):
      elif opt in ("-k", "--key"):
        start_key = arg
    raw_message=read_file(inputfile).rstrip('\r\n')
+   print " ## message length is: %d" % len(raw_message)
+   if len(raw_message)%8==0: padding=0
+   elif (len(raw_message)+1)%8==0: padding=1
+   elif (len(raw_message)+2)%8==0: padding=2
+   elif (len(raw_message)+3)%8==0: padding=3
+   elif (len(raw_message)+4)%8==0: padding=4
+   elif (len(raw_message)+5)%8==0: padding=5
+   elif (len(raw_message)+6)%8==0: padding=6
+   else: padding=7
+   while padding > 0:
+      raw_message = raw_message + "\x00"
+      padding = padding -1
    decode(start_key,raw_message)
+
 
 def read_file(filename):
    content = open(filename)
    return content.read()
+
 
 def decode(key,ciphertext):
    from time import time
    from binascii import unhexlify as unhex
 
    # example of DES encrypting in CBC mode with the IV of "\0\0\0\0\0\0\0\0"
-   print (" ##  Starting DES encryption using CBC mode ##")
+   print (" ##  Starting DES decryption using CBC mode ##")
    print (" Input     : %r" % ciphertext)
    print ""
    t = time()
@@ -222,7 +236,8 @@ def decode(key,ciphertext):
       d = ciphertext
       decrypted = k.decrypt(d)
       x = x + 1
-      if "ISIS" in decrypted: break
+      if (x>49999 and x%50000==0): print (" DES time taken: %f (%d crypt operations)" % ((time() - t),x))
+      if "ale" in decrypted: break
    print (" Matching Key      : %r" % k.getKey())
    print (" Decrypted Output     : %r" % decrypted)
    print (" DES time taken: %f (%d crypt operations)" % ((time() - t),x))
